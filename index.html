@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Para Yayelim ✨🌟</title>
+<style>
+body, html {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Comic Sans MS', cursive;
+  text-align: center;
+  background: #ffe6f2;
+  height: 100%;
+}
+.pantalla {
+  display: none;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+}
+h1 {
+  margin-top: 100px;
+  color: #d6336c;
+  font-size: 2em;
+}
+button {
+  font-size: 1.2em;
+  padding: 10px 20px;
+  margin: 10px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #d6336c;
+  color: white;
+}
+canvas {
+  background: #ffcce6;
+  margin: 0 auto;
+  display: block;
+  border: 2px solid #d6336c;
+}
+#contador {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2em;
+  color: #c2185b;
+}
+.heart {
+  position: absolute;
+  color: #ff66b2;
+  font-size: 20px;
+}
+.mensaje {
+  position: absolute;
+  color: #ff4081;
+  font-size: 1.5em;
+  animation: flotar 3s linear forwards;
+}
+@keyframes flotar {
+  0% { opacity:1; transform:translateY(100%); }
+  100% { opacity:0; transform:translateY(-50%); }
+}
+#gameover, #ganaste {
+  background: #ffccd5;
+  font-size: 2.5em;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+</style>
+</head>
+<body>
+
+<div id="portada" class="pantalla">
+  <h1>Para el amor de mi vidam, Yayelim ✨🌟</h1>
+  <button onclick="iniciarJuego()">Entrar 💖</button>
+</div>
+
+<div id="juego" class="pantalla">
+  <div id="contador">❤️ 0 / 8</div>
+  <canvas id="gameCanvas"></canvas>
+  <div>
+    <button onclick="mover('izq')">⬅️</button>
+    <button onclick="disparar()">🔫</button>
+    <button onclick="mover('der')">➡️</button>
+  </div>
+</div>
+
+<div id="premio" class="pantalla">
+  <h1>Te ganaste un premio 🏆</h1>
+  <button onclick="elegir('chocolates')">🍫 Chocolates</button>
+  <button onclick="elegir('besos')">💋 Besos</button>
+  <button onclick="elegir('coito')">🔥 Coito</button>
+</div>
+
+<div id="gameover" class="pantalla">
+  <h1>💔 GAME OVER 💔</h1>
+  <button onclick="volverAPremio()">Volver a intentar 🔄</button>
+</div>
+
+<div id="ganaste" class="pantalla">
+  <h1>Ganaste muamm 😽💖</h1>
+  <button onclick="volverAPremio()">Volver a intentar 🔄</button>
+</div>
+
+<audio id="musicaPortada" src="https://www.bensound.com/bensound-music/bensound-sunny.mp3" loop></audio>
+<audio id="musica" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
+<audio id="musicaGanador" src="https://dl.dropboxusercontent.com/s/3xbt9x3k2co6j16/AlgoMagico-RauwAlejandro.mp3" loop></audio>
+<audio id="musicaTriste" src="https://dl.dropboxusercontent.com/s/t8j3cvscb9bnw4b/SadMusic.mp3" loop></audio>
+
+<script>
+window.onload = () => {
+  mostrar('portada');
+  iniciarLluviaPortada();
+  document.getElementById("musicaPortada").play();
+};
+
+function mostrar(id) {
+  document.querySelectorAll('.pantalla').forEach(p => p.style.display = 'none');
+  document.getElementById(id).style.display = 'block';
+}
+
+function iniciarLluviaPortada() {
+  const portada = document.getElementById('portada');
+  setInterval(() => {
+    const heart = document.createElement("div");
+    heart.classList.add("heart");
+    heart.style.left = Math.random() * 90 + "vw";
+    heart.style.fontSize = Math.random() * 20 + 10 + "px";
+    heart.style.top = "-50px";
+    heart.innerHTML = "❤️";
+    portada.appendChild(heart);
+
+    heart.animate([
+      { transform: "translateY(0px)", opacity: 1 },
+      { transform: "translateY(100vh)", opacity: 0.8 }
+    ], {
+      duration: 5000,
+      iterations: 1
+    });
+
+    heart.addEventListener('click', () => {
+      heart.style.transition = 'transform 0.3s, opacity 0.3s';
+      heart.style.transform = 'scale(1.5)';
+      heart.style.opacity = '0';
+      setTimeout(() => heart.remove(), 300);
+    });
+
+    setTimeout(() => heart.remove(), 5000);
+  }, 300);
+}
+
+let canvas, ctx, ancho, alto, cannonX, corazones=[], disparos=[], score=0;
+const objetivo = 8;
+const mensajes = ["¡Vamos Yayelim!", "¡Tú puedes!", "¡Eres la mejor!", "¡La número 1!", "¡Vamos!"];
+let motivadorInterval;
+
+function iniciarJuego() {
+  mostrar('juego');
+  document.getElementById("musicaPortada").pause();
+  document.getElementById("musica").play();
+
+  canvas = document.getElementById("gameCanvas");
+  ctx = canvas.getContext("2d");
+  ancho = canvas.width = window.innerWidth;
+  alto = canvas.height = window.innerHeight * 0.7;
+  cannonX = ancho / 2;
+  score = 0;
+  corazones = [];
+  disparos = [];
+  document.getElementById("contador").innerText = `❤️ ${score} / ${objetivo}`;
+
+  setInterval(() => corazones.push({x: Math.random()*ancho, y:0}), 1500);
+  motivadorInterval = setInterval(mostrarMotivador, 3000);
+  requestAnimationFrame(updateGame);
+}
+
+function mover(dir) {
+  if (dir==='izq') cannonX = Math.max(20, cannonX - ancho*0.05);
+  if (dir==='der') cannonX = Math.min(ancho-20, cannonX + ancho*0.05);
+}
+
+function disparar() {
+  disparos.push({x:cannonX, y:alto-40});
+}
+
+function updateGame() {
+  ctx.clearRect(0,0,ancho,alto);
+  ctx.fillStyle = "#d6336c";
+  ctx.fillRect(cannonX-20, alto-20, 40,20);
+
+  ctx.fillStyle = "#000";
+  disparos.forEach(d=>{d.y-=alto*0.01; ctx.fillRect(d.x-3,d.y,6,15);});
+  disparos = disparos.filter(d=>d.y>0);
+
+  ctx.fillStyle = "#ff66b2";
+  ctx.font = `${alto*0.04}px Arial`;
+  corazones.forEach(c=>{c.y+=alto*0.003; ctx.fillText("❤️",c.x,c.y);});
+
+  disparos.forEach((d,di)=>{
+    corazones.forEach((c,ci)=>{
+      if(Math.abs(d.x-c.x)<30&&Math.abs(d.y-c.y)<30){
+        corazones.splice(ci,1);
+        disparos.splice(di,1);
+        score++;
+        document.getElementById("contador").innerText=`❤️ ${score} / ${objetivo}`;
+        if(score>=objetivo) ganar();
+      }
+    });
+  });
+
+  requestAnimationFrame(updateGame);
+}
+
+function mostrarMotivador() {
+  const msg = document.createElement("div");
+  msg.classList.add("mensaje");
+  msg.style.left = Math.random()*80+"vw";
+  msg.style.bottom = "0px";
+  msg.innerText = mensajes[Math.floor(Math.random()*mensajes.length)];
+  document.body.appendChild(msg);
+  setTimeout(()=>msg.remove(),3000);
+}
+
+function ganar() {
+  mostrar('premio');
+  document.getElementById("musica").pause();
+  clearInterval(motivadorInterval);
+  document.getElementById("musicaGanador").play();
+}
+
+function elegir(opcion) {
+  if(opcion==='besos') {
+    mostrar('ganaste');
+    document.getElementById("musicaGanador").play();
+  } else {
+    mostrar('gameover');
+    document.getElementById("musicaGanador").pause();
+    document.getElementById("musicaTriste").play();
+  }
+}
+
+function volverAPremio() {
+  mostrar('premio');
+  document.getElementById("musicaTriste").pause();
+  document.getElementById("musicaGanador").play();
+}
+</script>
+
+</body>
+</html>
